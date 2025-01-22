@@ -29,14 +29,14 @@ class UI:
                     f for f in formats if f['has_video'] and f['has_audio']
                 ]
 
-                if valid_formats:
+                if formats:
                     st.subheader('🎥 Formatos disponíveis (com vídeo + áudio)')
                     format_options = {
                         f"{f['format_id']} - {f['resolution']} ({f['extension']})": f["format_id"]
-                        for f in valid_formats
+                        for f in formats
                     }
                     
-                    for f in valid_formats:
+                    for f in formats:
                         st.write(f"ID: {f['format_id']} | Resolução: {f['resolution']} | Extensão: {f['extension']} | 🎵 Áudio: {f['acodec']} | 🎥 Vídeo: {f['vcodec']}")
                     
                     format_choice = st.selectbox('🔽 Escolha o formato para download:', list(format_options.keys()))
@@ -44,32 +44,26 @@ class UI:
                     if st.button('⬇️ Baixar Vídeo'):
                         st.write("🔄 Baixando vídeo...")
 
-                        # Pegar o format_id correspondente
-                        selected_format = format_options[format_choice]
+                        format_id = format_options[format_choice]
+                        video_file = downloader.download_video(self.temp_folder)
 
-                        downloader = VideoDownloader(video_url, selected_format)
-                        result = downloader.download_video(self.temp_folder)
+                        if video_file:
+                            # Exibe o botão de download após o vídeo ser baixado
+                            with open(video_file, "rb") as f:
+                                st.download_button(
+                                    label="Clique aqui para baixar o vídeo",
+                                    data=f,
+                                    file_name=f"{info['title']}.mp4",
+                                    mime="video/mp4"
+                                )
 
-                        if result == 'Download concluído com sucesso!':
-                            video_file = os.path.join(self.temp_folder, f"{info['title']}.mp4")
-
-                            if os.path.exists(video_file):
-                                with open(video_file, "rb") as f:
-                                    st.download_button(
-                                        label="📥 Clique aqui para baixar o vídeo",
-                                        data=f,
-                                        file_name=f"{info['title']}.mp4",
-                                        mime="video/mp4"
-                                    )
-
-                                st.success("✅ Download concluído!")
-                            else:
-                                st.error("⚠️ Erro ao encontrar o arquivo baixado.")
+                            # Remove o arquivo após o download
+                            os.remove(video_file)
+                            st.success("O arquivo foi baixado e apagado do servidor!")
                         else:
-                            st.error(f"❌ Erro ao baixar o vídeo: {result}")
-
+                            st.error("⚠️ Erro ao baixar o vídeo.")
                 else:
-                    st.warning('⚠️ Nenhum formato disponível para este vídeo.')
+                    st.warning('Nenhum formato disponível para este vídeo.')
             else:
                 st.error(info)
     
